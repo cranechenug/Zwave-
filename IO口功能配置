@@ -17,6 +17,8 @@ one——button.h中
  */
 #define BUTTON_HELD_COUNT   100  /**< 1000 mSec */这个参数是长按设置，即你按下一个按键至少1s才能触发长按的时间
 
+one_button.c中
+#define TIME_TRIPLE_PRESS     100 /* Triple press timeout is set to 1.5sec */这个参数理解为，在你想要短按3下的时候，从第一次按下到最后一下按下抬起的时间必须在1000ms内，即1s.注释有误不是1.5s.
 总结：
 按下0-49ms,认为按键没有按下，可能由外界干扰触发的。
 按下50-199ms,认为按键有按下，但不能触发任何事件。
