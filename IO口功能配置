@@ -1,0 +1,24 @@
+IO口功能配置
+1.涉及的参数如下：
+one——button.h中
+/**
+ * Minimum tinmes the button should be detected before we accept it
+ */
+#define DEBOUNCE_COUNT        5  /**< 50 mSec*/这个参数可以看做是软件消抖，按下一个按键至少50ms才认为已经按下一个按键
+
+/**
+ * Key shall be press in min time to be an event
+ */
+#define MIN_PRESS_COUNT      20  /**< 200 mSec*/这个参数是短按时间设置，即你按下一个按键至少200ms才认为短按了一下，可以触发相应时间。
+
+/**
+ * Minimum number of times a button should be detected before we say that it
+ * is held down
+ */
+#define BUTTON_HELD_COUNT   100  /**< 1000 mSec */这个参数是长按设置，即你按下一个按键至少1s才能触发长按的时间
+
+总结：
+按下0-49ms,认为按键没有按下，可能由外界干扰触发的。
+按下50-199ms,认为按键有按下，但不能触发任何事件。
+按下200-999ms,认为按键有按下，能触发短按事件。
+按下1000ms以上,认为按键有按下，能触发长按事件。
