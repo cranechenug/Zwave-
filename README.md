@@ -135,3 +135,92 @@ BOOL SetPinOut( LED_OUT led)
   return TRUE;
 }
 ***********************************
+**********************
+在CMD时，如果配置BOARD不等于ZM5202，那么，在执行HW函数时，执行到ValidNVR = InitZDP03A()时，不会执行引脚交换（）
+  if(1 == pinSwap)
+  {
+    myIo.pPinMap = portMap_zm5202;
+    myIo.size = sizeof(portMap_zm5202);
+    ZW_DEBUG_IO_ZDP03A_SEND_STR(" pinswap size = ");
+    ZW_DEBUG_IO_ZDP03A_SEND_NUM(myIo.size);
+
+  }
+ 函数中myIo.size始终为0，则在继续执行SetPinIn（SetPinOut、SetPinIn、Led、ButtonGet这些函数性质一样）这些函数时，
+ BOOL SetPinIn( S_BUTTONS button, BOOL pullUp)
+{
+  BYTE pin = buttonMap[button];
+
+  if(0 != myIo.size)
+  {
+    if(FALSE == SeachPinMap(&pin, TRUE))
+    {
+      return FALSE;
+    }
+  }
+  myIo.enButtons |= (1<<button);
+  PinIn( pin, pullUp);
+  return TRUE;
+}
+则不会执行if条件语句，更不可能执行SeachPinMap函数。
+而SeachPinMap函数一执行，将会使引脚按照portMap_zm5202的规则进行交换。
+BOOL SeachPinMap(BYTE* pPin, BOOL debug)
+{
+  BYTE i = 0;
+  if( TRUE == debug)
+  {
+    ZW_DEBUG_IO_ZDP03A_SEND_STR("SeachPinMap(");
+    ZW_DEBUG_IO_ZDP03A_SEND_NUM(*pPin);
+    ZW_DEBUG_IO_ZDP03A_SEND_BYTE(')');
+    ZW_DEBUG_IO_ZDP03A_SEND_NL();
+  }
+
+  for(i = 0; i < myIo.size; i++)
+  {
+    if(*pPin == myIo.pPinMap[i].in)
+    {
+      *pPin = myIo.pPinMap[i].out;
+      if( TRUE == debug)
+      {
+        ZW_DEBUG_IO_ZDP03A_SEND_STR(" -> new pin ");
+        ZW_DEBUG_IO_ZDP03A_SEND_NUM(*pPin);
+        ZW_DEBUG_IO_ZDP03A_SEND_NL();
+      }
+      return TRUE;
+    }
+  }
+  if( TRUE == debug)
+  {
+    ZW_DEBUG_IO_ZDP03A_SEND_STR(" PIN NOT SUPPORTED ");
+    ZW_DEBUG_IO_ZDP03A_SEND_NUM(*pPin);
+    ZW_DEBUG_IO_ZDP03A_SEND_NL();
+  }
+  return FALSE;
+}
+
+
+IO_MAP portMap_zm5202[] =
+{
+  {0x07,0x10}, /**< LED 1*/
+  {0x37,0x37}, /**< LED 2*/
+  {0x11,0x11}, /**< S0 */
+  {0x24,0x24}, /**< S1 */
+  {0x36,0x36}, /**< S2 */
+  {0x23,0x23}, /**< S3 */
+  {0x22,0x22}, /**< S4 */
+};
+typedef struct _IO_ZDP03A_
+{
+  IO_MAP* pPinMap;
+  BYTE size;
+  BYTE enButtons;
+  BYTE flashSec;
+  VOID_CALLBACKFUNC(pFlasTimeout)(void);
+  BYTE bTimerHandle;
+  BYTE nvmChipSelect;
+} IO_ZDP03A;
+typedef struct _IO_MAP_
+{
+  BYTE in;
+  BYTE out;
+} IO_MAP;
+***********************************
