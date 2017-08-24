@@ -63,5 +63,75 @@ IO_MAP portMap_zm5202[] =
   {0x23,0x23}, /**< S3 */
   {0x22,0x22}, /**< S4 */
 };
-此段代码涉及到IO口的转换，还没有弄明白。待明白后再上传。
+此段代码涉及到IO口的转换，在CMD时，如果输入BOARD=ZM5202，那么，portMap_zm5202[]将生效
+*********************NVR配置说明文档中的内容INS12366*********************************
+3.4.2  BOARD parameter
+This parameter specifies the target hardware platform when building the application.
+Table 2. Description of BOARD parameters in command line
+Parameter                Result
+No parameters specified  Building for all hardware platforms.
+BOARD=ZDP03A             Building for a ZDB3502 mounted on a ZDP03A
+BOARD=ZM5101             Building for a ZDB5101 mounted on a ZDP03A
+BOARD=ZM5202             Building for a ZDB5202 mounted on a ZDP03A
 
+3.4.3  CHIP parameter
+This parameter specifies the chip used. However, only the 500 Series chip is supported currently.
+Table 3. Description of CHIP parameters in command line
+Parameter                 Result
+No parameters specified  Building application for 500 Series chip
+CHIP=ZW050x              Building application for 500 Series chip
+*********************NVR配置说明文档中的内容INS12366******************************************
+SetPinIn中调用buttonMap数组
+*************************
+/*============================ PinIn ===============================
+** Function description
+** This function...
+**
+** Side effects:
+**
+**-------------------------------------------------------------------------*/
+BOOL SetPinIn( S_BUTTONS button, BOOL pullUp)
+{
+  BYTE pin = buttonMap[button];
+
+  if(0 != myIo.size)
+  {
+    if(FALSE == SeachPinMap(&pin, TRUE))
+    {
+      return FALSE;
+    }
+  }
+  myIo.enButtons |= (1<<button);
+  PinIn( pin, pullUp);
+  return TRUE;
+}
+********************************************
+SetPinOut中调用ledMap数组
+*****************************
+/*============================ PinOut ===============================
+** Function description
+** This function...
+**
+** Side effects:
+**
+**-------------------------------------------------------------------------*/
+BOOL SetPinOut( LED_OUT led)
+{
+  BYTE pin = ledMap[led];
+
+  ZW_DEBUG_IO_ZDP03A_SEND_STR("SetPinOut(");
+  ZW_DEBUG_IO_ZDP03A_SEND_NUM(led);
+  ZW_DEBUG_IO_ZDP03A_SEND_BYTE(')');
+  ZW_DEBUG_IO_ZDP03A_SEND_NL();
+
+  if(0 != myIo.size)
+  {
+    if(FALSE == SeachPinMap(&pin, TRUE) )
+    {
+      return FALSE;
+    }
+  }
+  PinOut( pin);
+  return TRUE;
+}
+***********************************
