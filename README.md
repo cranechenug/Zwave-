@@ -224,3 +224,28 @@ typedef struct _IO_MAP_
   BYTE out;
 } IO_MAP;
 ***********************************
+总结，如果CMD是不选用BOARD=ZM5202，则只需要设置如下两个数组，以及在HW中初始化IO口即可。
+  /**
+ * Map zdp03a button to ZW050 pin.
+ */
+BYTE buttonMap[] = {0x11, 0x24, 0x36, 0x23, 0x22, 0x21, 0x34};
+
+/**
+ * Map zdp03a LED to ZW050 pin.
+ * 07 > port 0 pin 7
+ * 37 > port 3 pin 7
+ */
+BYTE ledMap[] = {0x7, 0x37, 0x10, 0x12, 0x14, 0x15, 0x16, 0x17};
+*************
+如果CMD是选用BOARD=ZM5202，则除了设置上面两个数组，以及在HW中初始化IO口以外。还需要设置portMap_zm5202中需要交换的IO口以及需要生效的IO(生效的IO配置成相同即可).
+
+IO_MAP portMap_zm5202[] =
+{
+  {0x07,0x10}, /**< LED 1*/
+  {0x37,0x37}, /**< LED 2*/
+  {0x11,0x11}, /**< S0 */
+  {0x24,0x24}, /**< S1 */
+  {0x36,0x36}, /**< S2 */
+  {0x23,0x23}, /**< S3 */
+  {0x22,0x22}, /**< S4 */
+};
