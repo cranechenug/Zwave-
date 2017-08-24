@@ -24,3 +24,242 @@ one_button.c中
 按下50-199ms,认为按键有按下，但不能触发任何事件。
 按下200-999ms,认为按键有按下，能触发短按事件。
 按下1000ms以上,认为按键有按下，能触发长按事件。
+
+p_BUTTON.C中的参数和one_button中的参数有什么不同，还未明白。明白后上传
+/*Timing used when checking button status*/
+#define PB_DEBOUNCE_TIME 2      /*10-20ms debounce should be enough*/
+
+#define PB_HOLD_TIME 50          /*1000ms before we assume the key is held down*/
+
+*************************************************************************************
+  
+  /* Init key manager*/
+ SW中初始化这个函数 InitKeyManager(AppStateManager, NULL);
+ void
+InitKeyManager(
+  VOID_CALLBACKFUNC(AppStMan)(BYTE),             /*function-pointer to application state machine*/
+  VOID_CALLBACKFUNC(pSetPowerDownTimeout)(BYTE)) /*function-pointer to battery ZCB_pSetPowerDownTimeout(BYTE)*/
+{
+  mykeyMan.pAppStMan = AppStMan;
+  mykeyMan.pSetPowerDownTimeout = pSetPowerDownTimeout;
+
+  /* Init button module */
+  initButton();
+  OneButtonInit(ONE_BUTTON_PB0);
+  keyHeldFlag = 0;
+
+
+}
+其中initButton
+BYTE initButton(void)
+{
+
+  return TimerStart(ZCB_TimerCheckButtons, 1, TIMER_FOREVER);
+}
+即10ms执行一次ZCB_TimerCheckButtons：
+/*============================   TimerCheckButtons   ======================
+**    Function description
+**    This function checks and updates the status of the Push buttons.
+**    It is run every 10ms
+**    Side effects:
+**
+**--------------------------------------------------------------------------*/
+void ZCB_TimerCheckButtons(void)
+{
+  if(!IsChipSelectActive()) /*Only check buttons if EEPROM is not selected*/
+  {
+    if(bPressed)
+      bOldPressed = bPressed&PB_MASK; //Store old values if a key is down
+
+    bPressed = FALSE;
+  /*Call macro to set value of PBs*/
+    if (IsPinInput(S1)) SET_PB_STATUS(S1);
+    if (IsPinInput(S2)) SET_PB_STATUS(S2);  //PIN_IN(PB1,1);
+//  if (IsPinInput(S3)) SET_PB_STATUS(S3);  //PIN_IN(PB2,1);
+    if (IsPinInput(S4)) SET_PB_STATUS(S4);
+    if (IsPinInput(S5)) SET_PB_STATUS(S5);  //PIN_IN(PB4,1);
+
+  }
+
+  /*Make sure that MOSI is output after we checked the key. The rest is ok as inputs*/
+//  PIN_OUT(SPI1_SCK); // PB1 (P24) is used as SCK output to the EEPROM
+//  PIN_OUT(SPI1_MOSI); // PB4 (P22) is used as MOSI output to the EEPROM
+
+  if(bPressed)
+  {
+    readyCount++; /*Increment readyCount if PB is down*/
+  }
+  else
+  {
+    /*A key has been released, increment debounce*/
+    if(bOldPressed&PB_RELEASE)
+      readyCount++;
+    else if((bOldPressed&PB_MASK))
+    {
+      /*If last detection resulted in a value. Restart DEBOUNCE*/
+      readyCount = 0;
+      bPressed = 0;    /*Zero bPressed*/
+      bOldPressed |= PB_RELEASE;         /*Set bit, release detect ongoing*/
+    }
+
+  }
+  if(readyCount == 0xFFFF)
+    readyCount = 0xFFFE;
+
+  if(readyCount>PB_DEBOUNCE_TIME)
+  {
+    if (bPressed)
+    {
+      if (IS_DOWN_PB0(bPressed) &&(holdCount[0] < PB_HOLD_TIME))
+      {
+        holdCount[0]++;
+      }
+      if (IS_DOWN_PB1(bPressed) && (holdCount[1] < PB_HOLD_TIME))
+      {
+        holdCount[1]++;
+      }
+#if 0
+      if (IS_DOWN_PB2(bPressed) && (holdCount[2] < PB_HOLD_TIME))
+      {
+        holdCount[2]++;
+      }
+#endif
+      if (IS_DOWN_PB3(bPressed) && (holdCount[3] < PB_HOLD_TIME))
+      {
+        holdCount[3]++;
+      }
+      if (IS_DOWN_PB4(bPressed) && (holdCount[4] < PB_HOLD_TIME))
+      {
+        holdCount[4]++;
+      }
+    }
+    else
+    {
+      holdCount[0] = 0;
+      holdCount[1] = 0;
+      holdCount[2] = 0;
+      holdCount[3] = 0;
+      holdCount[4] = 0;
+    }
+    bOldPressed = FALSE;              /*Zero old values. No need when PB_DEBOUNCE expires*/
+  }
+
+}
+先暂停分析，然后后回到上层
+*************************
+分析OneButtonInit(ONE_BUTTON_PB0);
+/*===============================   OneButtonInit   ========================
+**    This function initializes the one button polling
+**
+**    Side effects:
+**
+**--------------------------------------------------------------------------*/
+BOOL
+OneButtonInit(BYTE bButton)
+{
+  buttonAction = 0;
+  buttonCount = 0;
+  bTriplePress = 0;
+  bTriplePressHandle = 0;
+  oneButton = bButton;
+
+  if ( TimerStart(ZCB_OneButtonPoll, 1, TIMER_FOREVER) == 0xFF)
+    return FALSE;
+#ifdef ZW_DEBUG_ONE_BUTTON
+  ZW_UART_INIT(1152);
+  ZW_DEBUG_ONE_B_SEND_BYTE('s');
+#endif
+  return TRUE;
+}
+其中10ms执行一次ZCB_OneButtonPoll：
+/*================================   OneButtonPoll   =========================
+**    Poll function that polls the button every 10ms
+**
+**    Side effects:
+**
+**--------------------------------------------------------------------------*/
+void             /*RET  Nothing                  */
+ZCB_OneButtonPoll(void)  /*IN  Nothing                   */
+{
+  /* Check button state */
+  if (OneButtonPressed(oneButton))
+  {
+    /* Check if button is pushed long */
+    if (++buttonCount >= BUTTON_HELD_COUNT)
+    {
+      /*First BUTTON_HELD_COUNT event*/
+      if(buttonCount == (BUTTON_HELD_COUNT + 1))
+      {
+        buttonAction = BUTTON_IS_HELD;
+      }
+      else
+      {
+        /*other BUTTON_HELD_COUNT event*/
+        if(buttonCount == (2*BUTTON_HELD_COUNT + 1))
+        {
+          buttonAction = BUTTON_IS_HELD;
+          buttonCount = BUTTON_HELD_COUNT + 2;
+        }
+      }
+    }
+  }
+  else
+  {
+    if  (buttonCount>DEBOUNCE_COUNT)
+    {
+      if ((buttonCount < BUTTON_HELD_COUNT))
+      {
+        /*Short press demands a minimun press time else it is for triple-press.!*/
+        if((buttonCount > MIN_PRESS_COUNT))
+        {
+          buttonAction = BUTTON_WAS_PRESSED;
+
+          /*Stop triple press*/
+          if(0 != bTriplePressHandle)
+          {
+            TimerCancel(bTriplePressHandle);
+            bTriplePressHandle = 0;
+          }
+          bTriplePress = 0;
+        }
+        else
+        {
+          /* Handle tripple press */
+          bTriplePress++;
+        }
+
+        if (bTriplePress == 1)
+        {
+          /* First press, start timer */
+          bTriplePressHandle = TimerStart(ZCB_OneButtonTriplePressTimeout, TIME_TRIPLE_PRESS, 1);
+          if (bTriplePressHandle == 0xFF)
+            bTriplePressHandle = 0;
+        }
+        else if (bTriplePress == 3)
+        {
+          /* Triple press detected */
+          if (bTriplePressHandle)
+          {
+            buttonAction = BUTTON_TRIPLE_PRESS;
+            TimerCancel(bTriplePressHandle);
+            bTriplePressHandle = 0;
+            ZW_DEBUG_ONE_B_SEND_BYTE('B');
+            ZW_DEBUG_ONE_B_SEND_BYTE('T');
+            ZW_DEBUG_ONE_B_SEND_NL();
+
+          }
+          bTriplePress = 0;
+        }
+      }
+      else
+      {
+        /*We only send BUTTON_WAS_RELEASED after button was held*/
+        buttonAction = BUTTON_WAS_RELEASED;
+        ZW_DEBUG_ONE_B_SEND_BYTE('B');
+        ZW_DEBUG_ONE_B_SEND_BYTE('R');
+        ZW_DEBUG_ONE_B_SEND_NL();
+      }
+    }
+    buttonCount = 0;
+  }
+}
