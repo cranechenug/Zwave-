@@ -1,7 +1,87 @@
 
 如何增加新的CommandClass
+1.添加支持的COMMANDCLASS
 
-1.switchOnOff.c中的以下函数中添加相应信息
+/* CHANGE - Change the list of command classes to fit your product */
+
+/**
+ * Unsecure node information list.
+ * Be sure Command classes are not duplicated in both lists.
+ * CHANGE THIS - Add all supported non-secure command classes here
+ *Implemented multilevel switch CC and configuration CC by Michael 2016/7/1
+ **/
+static code BYTE cmdClassListNonSecureNotIncluded[] =
+{
+	COMMAND_CLASS_SWITCH_MULTILEVEL,
+	COMMAND_CLASS_MULTI_CHANNEL_V4,//added by cranechenug170828添加这个
+  COMMAND_CLASS_ZWAVEPLUS_INFO,
+  COMMAND_CLASS_SWITCH_BINARY,
+	COMMAND_CLASS_CONFIGURATION_V2,
+	COMMAND_CLASS_SCENE_ACTIVATION,
+	COMMAND_CLASS_SCENE_ACTUATOR_CONF,
+  COMMAND_CLASS_ASSOCIATION,
+  COMMAND_CLASS_ASSOCIATION_GRP_INFO,
+  COMMAND_CLASS_VERSION,
+  COMMAND_CLASS_MANUFACTURER_SPECIFIC,
+  COMMAND_CLASS_DEVICE_RESET_LOCALLY,
+  COMMAND_CLASS_POWERLEVEL
+#ifdef SECURITY
+  ,COMMAND_CLASS_SECURITY
+#endif
+#ifdef BOOTLOADER_ENABLED
+  ,COMMAND_CLASS_FIRMWARE_UPDATE_MD_V2
+#endif
+};
+
+/**
+ * Unsecure node information list Secure included.
+ * Be sure Command classes are not duplicated in both lists.
+ * CHANGE THIS - Add all supported non-secure command classes here
+ **/
+static code BYTE cmdClassListNonSecureIncludedSecure[] =
+{
+#ifdef SECURITY
+  COMMAND_CLASS_ZWAVEPLUS_INFO,
+  COMMAND_CLASS_POWERLEVEL,
+  COMMAND_CLASS_SECURITY
+#else
+  NULL
+#endif
+};
+
+
+/**
+ * Secure node inforamtion list.
+ * Be sure Command classes are not duplicated in both lists.
+ * CHANGE THIS - Add all supported secure command classes here
+ **/
+static code BYTE cmdClassListSecure[] =
+{
+#ifdef SECURITY
+  COMMAND_CLASS_VERSION,
+	COMMAND_CLASS_MULTI_CHANNEL_V4,//added by cranechenug170828添加这个
+  COMMAND_CLASS_SWITCH_BINARY,
+	COMMAND_CLASS_CONFIGURATION_V2,
+	COMMAND_CLASS_SCENE_ACTIVATION,
+	COMMAND_CLASS_SCENE_ACTUATOR_CONF,
+  COMMAND_CLASS_ASSOCIATION,
+  COMMAND_CLASS_ASSOCIATION_GRP_INFO,
+	COMMAND_CLASS_SWITCH_MULTILEVEL,
+  COMMAND_CLASS_MANUFACTURER_SPECIFIC,
+  COMMAND_CLASS_DEVICE_RESET_LOCALLY
+#ifdef BOOTLOADER_ENABLED
+  ,COMMAND_CLASS_FIRMWARE_UPDATE_MD_V2
+#endif
+#else
+  NULL
+#endif
+};
+
+
+
+
+
+2.switchOnOff.c中的以下函数中添加相应信息
 void                              /*RET Nothing                  */
 Transport_ApplicationCommandHandlerEx(
   RECEIVE_OPTIONS_TYPE_EX *rxOpt, /* IN receive options of type RECEIVE_OPTIONS_TYPE_EX  */
