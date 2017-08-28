@@ -34,7 +34,7 @@ void handleCommandClassMultiChannel(RECEIVE_OPTIONS_TYPE_EX *rxOpt,
 		UNUSED(cmdLength);
 		switch (pCmd->ZW_Common.cmd)
 		{
-			case SCENE_ACTIVATION_SET :
+			case 11 :
 				break;
 			default:
 				break;
