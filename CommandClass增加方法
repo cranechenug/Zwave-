@@ -122,3 +122,29 @@ void handleCommandClassMultiChannel(RECEIVE_OPTIONS_TYPE_EX *rxOpt,
 		}
 }
 
+3.添加COMMANDCLASS的版本信息
+在switchonoff.c文件中以下函数
+/*========================   handleCommandClassVersionAppl  =========================
+**   Application specific Command Class Version handler
+**   return none
+**
+**   Side effects: none
+**--------------------------------------------------------------------------*/
+BYTE
+handleCommandClassVersionAppl( BYTE cmdClass )
+{
+switch()
+{
+.................................
+...............
+	/******************mutiChannel-170828添加以下信息************************/
+		case COMMAND_CLASS_MULTI_CHANNEL_V4 :
+			commandClassVersion = MULTI_CHANNEL_VERSION_V4 ;//版本号代码在zw-classcmd.h中
+		break;
+/******************mutiChannel-170828************************/
+.................
+...........
+	
+}
+
+}
