@@ -1,1 +1,44 @@
 
+如何增加新的CommandClass
+
+1.switchOnOff.c中的以下函数中添加相应信息
+void                              /*RET Nothing                  */
+Transport_ApplicationCommandHandlerEx(
+  RECEIVE_OPTIONS_TYPE_EX *rxOpt, /* IN receive options of type RECEIVE_OPTIONS_TYPE_EX  */
+  ZW_APPLICATION_TX_BUFFER *pCmd, /* IN  Payload from the received frame */
+  BYTE   cmdLength)               /* IN Number of command bytes including the command */
+{ 
+switch()
+{
+    ..............
+    ..........
+    		/***********************MutiChanel-170828此为要添加的函数**********************************/
+		case COMMAND_CLASS_MULTI_CHANNEL_V4 :
+			handleCommandClassMultiChannel(rxOpt, pCmd, cmdLength);//这个函数需要自己重新定义并书写也是在switchonoff.c文件内。书写的内容按照规格书中的标准参数写
+		break;
+		/***********************MutiChanel-170828**********************************/
+    ..........
+    .........
+
+}
+}
+定义如下：
+void handleCommandClassMultiChannel(RECEIVE_OPTIONS_TYPE_EX *rxOpt,
+  ZW_APPLICATION_TX_BUFFER *pCmd,
+  BYTE   cmdLength);
+函数内容如下：
+  void handleCommandClassMultiChannel(RECEIVE_OPTIONS_TYPE_EX *rxOpt,
+  ZW_APPLICATION_TX_BUFFER *pCmd,
+  BYTE   cmdLength)
+{
+		UNUSED(cmdLength);
+		switch (pCmd->ZW_Common.cmd)
+		{
+			case SCENE_ACTIVATION_SET :
+				break;
+			default:
+				break;
+				
+		}
+}
+
