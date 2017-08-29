@@ -3,3 +3,107 @@
 
 CTRANSPORT_ENDPOINT myTransportEndpoint = { NULL, 0, NULL};
 在此添加所需要的ENDPOINT
+
+
+typedef struct _CTRANSPORT_ENDPOINT_
+{
+  EP_FUNCTIONALITY_DATA* pFunctionality;
+  BYTE sizeList;
+  EP_NIF* pList;
+  AGGREGATED_GROUP_BIT_MASK* pMaskArray;
+  BYTE sizeAggGroupArray;
+} CTRANSPORT_ENDPOINT;
+CTRANSPORT_ENDPOINT myTransportEndpoint = { NULL, 0, NULL};
+
+typedef union _EP_FUNCTIONALITY_DATA_
+{
+  struct _EP_FUNCTIONALITY_ bits;
+  BYTE   bDdata[3];
+} EP_FUNCTIONALITY_DATA;
+
+struct _EP_FUNCTIONALITY_
+{
+  BYTE nbrIndividualEndpoints : 7;  /**< B0, Number of End Points implemented by the node. The value MUST be in the range 1..127 */
+  BYTE resIndZeorBit   : 1;  /**< B0, This field MUST be set to 0*/
+  BYTE nbrAggregatedEndpoints : 7;  /**< B0, Number of End Points implemented by the node. The value MUST be in the range 1..127 */
+  BYTE resAggZeorBit   : 1;  /**< B0, This field MUST be set to 0*/
+  BYTE resZero      : 6;  /**< B1, This field MUST be set to 0*/
+  ENDPOINT_IDENTICAL_DEVICE_CLASS identical : 1; /**< B1, of enum type ENDPOINT_IDENTICAL_DEVICE_CLASS*/
+  ENDPOINT_DYNAMIC dynamic: 1;  /**< B1, of enum type ENDPOINT_DYNAMIC*/
+};
+
+
+
+GetMultiChannelEndPointFunctionality((EP_FUNCTIONALITY_DATA*) &pTxBuf->ZW_MultiChannelEndPointReportV4Frame.properties1);
+
+/*============================ GetMultiChannelEndPointFunctionality ===============================
+** Function description
+** Read Node endpoint functionality
+**
+** return pointer to functionality of type EP_FUNCTIONALITY.
+**
+**-------------------------------------------------------------------------*/
+void
+GetMultiChannelEndPointFunctionality(EP_FUNCTIONALITY_DATA* pFunc)
+{
+  if(NULL != myTransportEndpoint.pFunctionality)
+  {
+    pFunc->bDdata[0] = myTransportEndpoint.pFunctionality->bits.resZero |
+                     (myTransportEndpoint.pFunctionality->bits.identical << 6) |
+                     (myTransportEndpoint.pFunctionality->bits.dynamic << 7);
+    pFunc->bDdata[1] = (((myTransportEndpoint.pFunctionality->bits.nbrIndividualEndpoints |
+                     (myTransportEndpoint.pFunctionality->bits.resIndZeorBit << 7))));
+    pFunc->bDdata[2] = (((myTransportEndpoint.pFunctionality->bits.nbrAggregatedEndpoints |
+                     (myTransportEndpoint.pFunctionality->bits.resAggZeorBit << 7))));
+  }
+
+}
+
+/*============================ Transport_SetupAggregationGroups =============
+** Function description
+** This function...
+**
+** Side effects:
+**
+**-------------------------------------------------------------------------*/
+void
+Transport_SetupAggregationGroups(AGGREGATED_GROUP_BIT_MASK* pMaskArray, BYTE sizeArray)
+{
+  if(myTransportEndpoint.pFunctionality->bits.nbrAggregatedEndpoints == sizeArray)
+  {
+    myTransportEndpoint.pMaskArray = pMaskArray;
+    myTransportEndpoint.sizeAggGroupArray = sizeArray;
+  }
+}
+/*============================ Transport_AddEndpointSupport ================
+** Function description
+** This function...
+**
+** Side effects:
+**
+**-------------------------------------------------------------------------*/
+void
+Transport_AddEndpointSupport( EP_FUNCTIONALITY_DATA* pFunctionality, EP_NIF* pList, BYTE sizeList)
+{
+  myTransportEndpoint.pFunctionality = pFunctionality;
+  myTransportEndpoint.pList = pList;
+  myTransportEndpoint.sizeList = sizeList;
+  myTransportEndpoint.pMaskArray = NULL;
+  myTransportEndpoint.sizeAggGroupArray = 0;
+}
+/*============================ GetEndpointNif ===============================
+** Function description
+** This function...
+**
+** Side effects:
+**
+**-------------------------------------------------------------------------*/
+EP_NIF*
+GetEndpointNif(BYTE endpoint)
+{
+  if((endpoint > myTransportEndpoint.sizeList)||(0 == endpoint))
+  {
+    return NULL;
+  }
+  return &myTransportEndpoint.pList[endpoint - 1];
+}
