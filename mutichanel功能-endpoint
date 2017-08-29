@@ -1,1 +1,5 @@
 
+<ZW_TransportEndpoint.c中
+
+CTRANSPORT_ENDPOINT myTransportEndpoint = { NULL, 0, NULL};
+在此添加所需要的ENDPOINT
